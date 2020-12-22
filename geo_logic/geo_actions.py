@@ -1,6 +1,7 @@
 import pandas as pd
 from typing import Optional
 from utils import constants
+from functools import reduce
 import utils.cache_manager as cm
 from geopandas import GeoDataFrame
 from shapely.geometry import Point, Polygon
@@ -61,3 +62,9 @@ def at_least_one_image_in_polygon() -> GeoDataFrame:
 
     cm.polygons_with_images = non_empty_polygons[constants.polygon_return_schema]
     return cm.polygons_with_images
+
+
+def remove_images_inside_at_least_one_polygon():
+    merged_polygon = reduce(lambda p1, p2: p1.union(p2),
+                            cm.polygons_cache[constants.polygon_coords_cols])
+    return images_in_polygon(merged_polygon)
