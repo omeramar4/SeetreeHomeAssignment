@@ -43,15 +43,16 @@ def get_polygons_from_image_name(image_name: str) -> Optional[GeoDataFrame]:
     return polygons_of_point[constants.polygon_return_schema]
 
 
+# Find images from polygon id
 def at_least_one_image_in_polygon() -> GeoDataFrame:
     if cm.polygons_with_images is not None:
         return cm.polygons_with_images
 
     checked_polygons = list(cm.polygon_indexes_with_images.union(cm.polygon_indexes_without_images))
     not_checked_polygons = cm.polygons_cache[~cm.polygons_cache[constants.polygon_id_col].isin(checked_polygons)]
-    not_checked_polygons['number of images inside'] = (not_checked_polygons[constants.polygon_coords_cols]
-                                                       .apply(lambda poly: len(images_in_polygon(poly))))
-    non_empty_polygons = not_checked_polygons.loc[not_checked_polygons['number of images inside'] > 0]
+    not_checked_polygons['number_of_images_inside'] = (not_checked_polygons[constants.polygon_coords_cols]
+                                                        .apply(lambda poly: len(images_in_polygon(poly))))
+    non_empty_polygons = not_checked_polygons.loc[not_checked_polygons['number_of_images_inside'] > 0]
 
     polygons_indexes_with_images = list(cm.polygon_indexes_with_images)
     if polygons_indexes_with_images:
@@ -62,6 +63,24 @@ def at_least_one_image_in_polygon() -> GeoDataFrame:
 
     cm.polygons_with_images = non_empty_polygons[constants.polygon_return_schema]
     return cm.polygons_with_images
+
+
+# Find polygons from image id
+def polygons_in_images():
+    polygons_found = set()
+    num_of_polygons = len(cm.polygons_cache)
+    polygons_data = cm.polygons_cache
+    for _, image in cm.images_cache.iterrows():
+        image_coords = Point(*image[constants.image_coords_cols].values)
+        polygons_data['is_polygon_contains'] = (polygons_data[constants.polygon_coords_cols]
+                                                .apply(lambda poly: image_coords.within(poly)))
+        polygons_contains = polygons_data[polygons_data['is_polygon_contains']]
+        polygons_found = polygons_found.union(set(polygons_contains[constants.polygon_id_col]))
+        polygons_data = polygons_data[~polygons_data[constants.polygon_id_col].isin(list(polygons_found))]
+        if len(polygons_found) == num_of_polygons:
+            break
+    polygons_to_return = cm.polygons_cache[cm.polygons_cache[constants.polygon_id_col].isin(polygons_found)]
+    return polygons_to_return[constants.polygon_return_schema]
 
 
 def remove_images_inside_at_least_one_polygon():

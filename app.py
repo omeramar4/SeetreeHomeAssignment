@@ -1,7 +1,7 @@
 from flask import Flask, request
 from utils.decorators import load_decorator
 from geo_logic.geo_actions import get_images_from_polygon_id, \
-    get_polygons_from_image_name, at_least_one_image_in_polygon
+    get_polygons_from_image_name, at_least_one_image_in_polygon, polygons_in_images
 
 
 app = Flask(__name__)
