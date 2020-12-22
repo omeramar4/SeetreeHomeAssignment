@@ -18,10 +18,6 @@ class GeoLoader:
     def load(self):
         raise NotImplementedError
 
-    @staticmethod
-    def coordinates_cols():
-        raise NotImplementedError
-
 
 class PandasCsvLoader(GeoLoader):
 
