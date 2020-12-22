@@ -13,6 +13,7 @@ def images_in_polygon(polygon: Polygon) -> PandasDataFrame:
         Get image rows inside a given polygon.
 
         :param polygon: The polygon index in which the images are searched.
+
         :return: pandas dataframe of all relevant image rows
     """
     cm.images_cache['is_image_inside'] = (cm.images_cache[constants.image_coords_cols]
@@ -26,6 +27,7 @@ def get_images_from_polygon_id(polygon_id: str) -> Optional[PandasDataFrame]:
         This function stores the polygons found for future use.
 
         :param polygon_id: The polygon index in which the images are searched.
+
         :return: pandas dataframe of all relevant image rows. If the polygon index is
                  not in the polygons metadata, the function returns None.
     """
@@ -49,6 +51,7 @@ def get_polygons_from_image_name(image_name: str) -> Optional[GeoDataFrame]:
         This function stores the polygons found for future use.
 
         :param image_name: The image name for which the containing polygons are searched.
+
         :return: geopandas dataframe of all relevant polygon rows. If the image name is
                  not in the images metadata, the function returns None.
     """
