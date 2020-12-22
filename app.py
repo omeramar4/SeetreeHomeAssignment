@@ -1,6 +1,4 @@
 from flask import Flask, request
-import utils.cache_manager as cm
-from shapely.geometry import Point, Polygon
 from utils.decorators import load_decorator
 from geo_logic.geo_actions import get_images_from_polygon_id, \
     get_polygons_from_image_name, at_least_one_image_in_polygon
