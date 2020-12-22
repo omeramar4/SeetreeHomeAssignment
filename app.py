@@ -11,11 +11,9 @@ app.config['DEBUG'] = True
 @app.route('/')
 def home():
     messages = [
-        # page title
         f"<h1>SeeTree Home Assignment REST API</h1>"
         f"This page describes all accessible endpoint provided by this REST API",
 
-        # write out general info
         f"<h2>General Info</h2>"
         f"<h3>Actions on images and polygons</h3>"
 
