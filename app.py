@@ -51,7 +51,7 @@ def load_images():
         Loading the image metadata csv to pandas dataframe and store it in the app cache.
         If the cache already holds this data then the loading is skipped.
     """
-    return 'Images metadata file was loaded successfully'
+    return '<h1>Images metadata file was loaded successfully<h1>'
 
 
 @app.route('/load_polygons', methods=['GET'])
@@ -61,7 +61,7 @@ def load_polygons():
         Loading the polygon metadata csv to geopandas dataframe and store it in the app cache.
         If the cache already holds this data then the loading is skipped.
     """
-    return 'Polygons metadata file was loaded successfully'
+    return '<h1>Polygons metadata file was loaded successfully<h1>'
 
 
 @app.route('/get_polygons', methods=['GET', 'POST'])
@@ -76,7 +76,10 @@ def get_polygons():
     containing_polygons = get_polygons_from_image_name(image_name)
     if containing_polygons is None:
         return f'No image {image_name} in images metadata'
-    return f"{containing_polygons.to_html()}"
+    num_of_polygons = len(containing_polygons)
+    return f"<h1>Found {num_of_polygons} polygon{'s' if num_of_polygons == 1 else ''} " \
+           f"containing image {image_name}</h1>"\
+           f"{containing_polygons.to_html() if num_of_polygons else ''}"
 
 
 @app.route('/get_images', methods=['GET', 'POST'])
@@ -91,7 +94,10 @@ def get_images():
     images_within = get_images_from_polygon_id(polygon_name)
     if images_within is None:
         return f'No polygon {polygon_name} in polygons metadata'
-    return f"{images_within.to_html()}"
+    num_of_images = len(images_within)
+    return f"<h1>Found {num_of_images} image{'s' if num_of_images == 1 else ''} " \
+           f"inside polygon {polygon_name}</h1>"\
+           f"{images_within.to_html() if num_of_images else ''}"
 
 
 @app.route('/get_all_polygons', methods=['GET', 'POST'])
@@ -101,7 +107,9 @@ def get_all_polygons():
         Get all polygons containing at least one image.
     """
     polygons_with_at_least_one_image = at_least_one_image_in_polygon()
-    return f"{polygons_with_at_least_one_image.to_html()}"
+    num_of_polygons = len(polygons_with_at_least_one_image)
+    return f"<h1>Found {num_of_polygons} polygons containing at least one image</h1>"\
+           f"{polygons_with_at_least_one_image.to_html() if num_of_polygons else ''}"
 
 
 if __name__ == '__main__':
