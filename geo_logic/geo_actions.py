@@ -9,12 +9,26 @@ from pandas import DataFrame as PandasDataFrame
 
 
 def images_in_polygon(polygon: Polygon) -> PandasDataFrame:
+    """
+        Get image rows inside a given polygon.
+
+        :param polygon: The polygon index in which the images are searched.
+        :return: pandas dataframe of all relevant image rows
+    """
     cm.images_cache['is_image_inside'] = (cm.images_cache[constants.image_coords_cols]
                                           .apply(lambda coords: polygon.contains(Point(*coords)), axis=1))
     return cm.images_cache[cm.images_cache['is_image_inside']]
 
 
 def get_images_from_polygon_id(polygon_id: str) -> Optional[PandasDataFrame]:
+    """
+        Get images rows inside a given polygon.
+        This function stores the polygons found for future use.
+
+        :param polygon_id: The polygon index in which the images are searched.
+        :return: pandas dataframe of all relevant image rows. If the polygon index is
+                 not in the polygons metadata, the function returns None.
+    """
     polygon_row = cm.polygons_cache.loc[cm.polygons_cache[constants.polygon_id_col] == polygon_id]
     if polygon_row.empty:
         return
@@ -30,6 +44,15 @@ def get_images_from_polygon_id(polygon_id: str) -> Optional[PandasDataFrame]:
 
 
 def get_polygons_from_image_name(image_name: str) -> Optional[GeoDataFrame]:
+    """
+        Get polygon rows containing a given image.
+        This function stores the polygons found for future use.
+
+        :param image_name: The image name for which the containing polygons are searched.
+        :return: geopandas dataframe of all relevant polygon rows. If the image name is
+                 not in the images metadata, the function returns None.
+    """
+
     image_row = cm.images_cache.loc[cm.images_cache[constants.image_id_col] == image_name]
     if image_row.empty:
         return
@@ -43,15 +66,21 @@ def get_polygons_from_image_name(image_name: str) -> Optional[GeoDataFrame]:
     return polygons_of_point[constants.polygon_return_schema]
 
 
-# Find images from polygon id
 def at_least_one_image_in_polygon() -> GeoDataFrame:
+    """
+        Get all polygon which have at least one image inside.
+        The function computes the number of images inside every polygon and return
+        all polygon with numbre_of_images > 0.
+
+        :return: geopandas dataframe of all polygons with at least one image inside.
+    """
     if cm.polygons_with_images is not None:
         return cm.polygons_with_images
 
     checked_polygons = list(cm.polygon_indexes_with_images.union(cm.polygon_indexes_without_images))
     not_checked_polygons = cm.polygons_cache[~cm.polygons_cache[constants.polygon_id_col].isin(checked_polygons)]
     not_checked_polygons['number_of_images_inside'] = (not_checked_polygons[constants.polygon_coords_cols]
-                                                        .apply(lambda poly: len(images_in_polygon(poly))))
+                                                       .apply(lambda poly: len(images_in_polygon(poly))))
     non_empty_polygons = not_checked_polygons.loc[not_checked_polygons['number_of_images_inside'] > 0]
 
     polygons_indexes_with_images = list(cm.polygon_indexes_with_images)
@@ -65,8 +94,15 @@ def at_least_one_image_in_polygon() -> GeoDataFrame:
     return cm.polygons_with_images
 
 
-# Find polygons from image id
 def polygons_in_images():
+    """
+        Get all polygon which have at least one image inside.
+        The function iterates through every image and finds the polygons containing it.
+        At each iteration, the found polygon indices are stored and removed from the
+        searched data for the following iterations.
+
+        :return: geopandas dataframe of all polygons with at least one image inside.
+    """
     polygons_found = set()
     num_of_polygons = len(cm.polygons_cache)
     polygons_data = cm.polygons_cache
@@ -84,6 +120,11 @@ def polygons_in_images():
 
 
 def remove_images_inside_at_least_one_polygon():
+    """
+        Unions all polygons and filter out images that don't appear in the union.
+
+        :return: pandas dataframe of imaged inside at least one polygon.
+    """
     merged_polygon = reduce(lambda p1, p2: p1.union(p2),
                             cm.polygons_cache[constants.polygon_coords_cols])
     return images_in_polygon(merged_polygon)

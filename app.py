@@ -1,4 +1,4 @@
-from flask import Flask, request
+from flask import Flask, request, url_for
 from utils.decorators import load_decorator
 from geo_logic.geo_actions import get_images_from_polygon_id, \
     get_polygons_from_image_name, at_least_one_image_in_polygon, polygons_in_images
@@ -8,21 +8,70 @@ app = Flask(__name__)
 app.config['DEBUG'] = True
 
 
+@app.route('/')
+def home():
+    messages = [
+        # page title
+        f"<h1>SeeTree Home Assignment REST API</h1>"
+        f"This page describes all accessible endpoint provided by this REST API",
+
+        # write out general info
+        f"<h2>General Info</h2>"
+        f"<h3>Actions on images and polygons</h3>"
+
+        "<h2>Available Endpoints</h2>"
+    ]
+
+    # describe all available endpoints
+    for rule in app.url_map.iter_rules():
+        if ('GET' in rule.methods or 'POST' in rule.methods) and has_no_empty_params(rule):
+            url = url_for(rule.endpoint, **(rule.defaults or {}))
+            func = globals().get(rule.endpoint)
+            doc = getattr(func, '__doc__')
+            msg = f"""
+                    <b><u>{url}</u></b>
+                    <b>Function name:</b> {rule.endpoint}
+                    <b>Accepted methods:</b> {', '.join(rule.methods)}
+                    <b>Docstring:</b> {doc}
+                """.replace('\n', '<br>')
+            messages.append(msg)
+    return '<br>'.join(messages)
+
+
+def has_no_empty_params(rule):
+    defaults = rule.defaults if rule.defaults is not None else ()
+    arguments = rule.arguments if rule.arguments is not None else ()
+    return len(defaults) >= len(arguments)
+
+
 @app.route('/load_images', methods=['GET'])
 @load_decorator(images=True)
 def load_images():
+    """
+        Loading the image metadata csv to pandas dataframe and store it in the app cache.
+        If the cache already holds this data then the loading is skipped.
+    """
     return 'Images metadata file was loaded successfully'
 
 
 @app.route('/load_polygons', methods=['GET'])
 @load_decorator(polygons=True)
 def load_polygons():
+    """
+        Loading the polygon metadata csv to geopandas dataframe and store it in the app cache.
+        If the cache already holds this data then the loading is skipped.
+    """
     return 'Polygons metadata file was loaded successfully'
 
 
 @app.route('/get_polygons', methods=['GET', 'POST'])
 @load_decorator(images=True, polygons=True)
-def get_polygon():
+def get_polygons():
+    """
+        Get all polygons containing a given image.
+        :param: image name.
+        :return: geopandas dataframe of all polygons in a polygons output format.
+    """
     image_name = request.args.get('image_name')
     containing_polygons = get_polygons_from_image_name(image_name)
     if containing_polygons is None:
@@ -33,6 +82,11 @@ def get_polygon():
 @app.route('/get_images', methods=['GET', 'POST'])
 @load_decorator(images=True, polygons=True)
 def get_images():
+    """
+        Get all images inside a given polygon index.
+        :param: image name (index).
+        :return: pandas dataframe of all images in an images output format.
+    """
     polygon_name = request.args.get('polygon_name')
     images_within = get_images_from_polygon_id(polygon_name)
     if images_within is None:
@@ -43,6 +97,9 @@ def get_images():
 @app.route('/get_all_polygons', methods=['GET', 'POST'])
 @load_decorator(images=True, polygons=True)
 def get_all_polygons():
+    """
+        Get all polygons containing at least one image.
+    """
     polygons_with_at_least_one_image = at_least_one_image_in_polygon()
     return f"{polygons_with_at_least_one_image.to_html()}"
 
