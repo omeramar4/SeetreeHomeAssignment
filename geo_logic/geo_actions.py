@@ -9,17 +9,18 @@ from utils.decorators import cache_decorator
 from pandas import DataFrame as PandasDataFrame
 
 
-def images_in_polygon(polygon: Polygon) -> PandasDataFrame:
+def images_in_polygon(polygon: Polygon, images: PandasDataFrame) -> PandasDataFrame:
     """
         Get image rows inside a given polygon.
 
         :param polygon: The polygon index in which the images are searched.
+        :param images: The images metadata dataframe.
 
         :return: pandas dataframe of all relevant image rows
     """
-    cm.images_cache['is_image_inside'] = (cm.images_cache[constants.image_coords_cols]
-                                          .apply(lambda coords: polygon.contains(Point(*coords)), axis=1))
-    return cm.images_cache[cm.images_cache['is_image_inside']]
+    images['is_image_inside'] = (images[constants.image_coords_cols]
+                                 .apply(lambda coords: polygon.contains(Point(*coords)), axis=1))
+    return images[images['is_image_inside']]
 
 
 @cache_decorator(polygon=True)
@@ -37,7 +38,7 @@ def get_images_from_polygon_id(polygon_id: str) -> Optional[PandasDataFrame]:
     if polygon_row.empty:
         return
     polygon = Polygon(*polygon_row[constants.polygon_coords_cols].values)
-    images_within = images_in_polygon(polygon)
+    images_within = images_in_polygon(polygon, cm.images_cache)
 
     return images_within[constants.images_return_schema]
 
@@ -77,7 +78,8 @@ def at_least_one_image_in_polygon() -> GeoDataFrame:
         return cm.polygons_with_images
 
     polygons_with_images = set([p for p in cm.polygon_to_images.keys()])
-    polygons_with_images = polygons_with_images.union(set.union(*([p for p in cm.image_to_polygons.values()])))
+    if cm.image_to_polygons:
+        polygons_with_images = polygons_with_images.union(set.union(*([p for p in cm.image_to_polygons.values()])))
     checked_polygons = list(polygons_with_images.union(cm.polygon_indexes_without_images))
 
     not_checked_polygons = cm.polygons_cache[~cm.polygons_cache[constants.polygon_id_col].isin(checked_polygons)]

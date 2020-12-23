@@ -30,7 +30,7 @@ def cache_decorator(image: bool = False, polygon: bool = False):
     """
     def decorator(f):
         @wraps(f)
-        def wrapper(name: str):
+        def wrapper(name: str, *args):
             cache_manager = None
             if image and not polygon:
                 cache_manager = cm.PolygonCache()
@@ -38,14 +38,14 @@ def cache_decorator(image: bool = False, polygon: bool = False):
                 cache_manager = cm.ImagesCache()
 
             if cache_manager is None:
-                return f(name)
+                return f(name, *args)
 
             if name in cache_manager.cached_ids.keys():
                 ids = list(cache_manager.cached_ids[name])
                 relevant_df = cache_manager.metadata_df.loc[cache_manager.metadata_df[cache_manager.id_col].isin(ids)]
                 return relevant_df[cache_manager.return_cols]
 
-            return_value = f(name)
+            return_value = f(name, *args)
 
             if len(return_value) > 0:
                 if name not in cache_manager.cached_ids.keys():
