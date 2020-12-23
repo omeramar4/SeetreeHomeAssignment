@@ -76,7 +76,8 @@ def at_least_one_image_in_polygon() -> GeoDataFrame:
     if cm.polygons_with_images is not None:
         return cm.polygons_with_images
 
-    polygons_with_images = set.union(*[polys for polys in cm.image_to_polygons.values()])
+    polygons_with_images = set([p for p in cm.polygon_to_images.keys()])
+    polygons_with_images = polygons_with_images.union(set.union(*([p for p in cm.image_to_polygons.values()])))
     checked_polygons = list(polygons_with_images.union(cm.polygon_indexes_without_images))
 
     not_checked_polygons = cm.polygons_cache[~cm.polygons_cache[constants.polygon_id_col].isin(checked_polygons)]

@@ -37,7 +37,7 @@ class ImagesCache(CacheManager):
                          return_cols=constants.images_return_schema,
                          coords_cols=constants.polygon_coords_cols,
                          metadata_df=images_cache,
-                         cached_ids=image_to_polygons)
+                         cached_ids=polygon_to_images)
 
 
 class PolygonCache(CacheManager):
@@ -48,4 +48,4 @@ class PolygonCache(CacheManager):
                          return_cols=constants.polygon_return_schema,
                          coords_cols=constants.polygon_coords_cols,
                          metadata_df=polygons_cache,
-                         cached_ids=polygon_to_images)
+                         cached_ids=image_to_polygons)
