@@ -84,7 +84,7 @@ def at_least_one_image_in_polygon() -> GeoDataFrame:
 
     not_checked_polygons = cm.polygons_cache[~cm.polygons_cache[constants.polygon_id_col].isin(checked_polygons)]
     not_checked_polygons['number_of_images_inside'] = (not_checked_polygons[constants.polygon_coords_cols]
-                                                       .apply(lambda poly: len(images_in_polygon(poly))))
+                                                       .apply(lambda poly: len(images_in_polygon(poly, cm.images_cache))))
     non_empty_polygons = not_checked_polygons.loc[not_checked_polygons['number_of_images_inside'] > 0]
 
     if polygons_with_images:
