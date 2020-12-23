@@ -5,6 +5,7 @@ from functools import reduce
 import utils.cache_manager as cm
 from geopandas import GeoDataFrame
 from shapely.geometry import Point, Polygon
+from utils.decorators import cache_decorator
 from pandas import DataFrame as PandasDataFrame
 
 
@@ -21,6 +22,7 @@ def images_in_polygon(polygon: Polygon) -> PandasDataFrame:
     return cm.images_cache[cm.images_cache['is_image_inside']]
 
 
+@cache_decorator(polygon=True)
 def get_images_from_polygon_id(polygon_id: str) -> Optional[PandasDataFrame]:
     """
         Get images rows inside a given polygon.
@@ -37,14 +39,10 @@ def get_images_from_polygon_id(polygon_id: str) -> Optional[PandasDataFrame]:
     polygon = Polygon(*polygon_row[constants.polygon_coords_cols].values)
     images_within = images_in_polygon(polygon)
 
-    if len(images_within) > 0:
-        cm.polygon_indexes_with_images.add(polygon_id)
-    else:
-        cm.polygon_indexes_without_images.add(polygon_id)
-
     return images_within[constants.images_return_schema]
 
 
+@cache_decorator(image=True)
 def get_polygons_from_image_name(image_name: str) -> Optional[GeoDataFrame]:
     """
         Get polygon rows containing a given image.
@@ -63,8 +61,6 @@ def get_polygons_from_image_name(image_name: str) -> Optional[GeoDataFrame]:
     cm.polygons_cache['is_polygon_contains'] = (cm.polygons_cache[constants.polygon_coords_cols]
                                                 .apply(lambda poly: image_coords.within(poly)))
     polygons_of_point = cm.polygons_cache[cm.polygons_cache['is_polygon_contains']]
-    cm.polygon_indexes_with_images = (cm.polygon_indexes_with_images
-                                      .union(set(polygons_of_point[constants.polygon_id_col])))
 
     return polygons_of_point[constants.polygon_return_schema]
 
@@ -80,17 +76,19 @@ def at_least_one_image_in_polygon() -> GeoDataFrame:
     if cm.polygons_with_images is not None:
         return cm.polygons_with_images
 
-    checked_polygons = list(cm.polygon_indexes_with_images.union(cm.polygon_indexes_without_images))
+    polygons_with_images = set.union(*[polys for polys in cm.image_to_polygons.values()])
+    checked_polygons = list(polygons_with_images.union(cm.polygon_indexes_without_images))
+
     not_checked_polygons = cm.polygons_cache[~cm.polygons_cache[constants.polygon_id_col].isin(checked_polygons)]
     not_checked_polygons['number_of_images_inside'] = (not_checked_polygons[constants.polygon_coords_cols]
                                                        .apply(lambda poly: len(images_in_polygon(poly))))
     non_empty_polygons = not_checked_polygons.loc[not_checked_polygons['number_of_images_inside'] > 0]
 
-    polygons_indexes_with_images = list(cm.polygon_indexes_with_images)
-    if polygons_indexes_with_images:
+    if polygons_with_images:
+        polygons_with_images = list(polygons_with_images)
         non_empty_polygons = pd.DataFrame(non_empty_polygons)
         checked_non_empty_polygons = pd.DataFrame(cm.polygons_cache[cm.polygons_cache[constants.polygon_id_col]
-                                                  .isin(polygons_indexes_with_images)])
+                                                  .isin(polygons_with_images)])
         non_empty_polygons = GeoDataFrame(pd.concat([non_empty_polygons, checked_non_empty_polygons]))
 
     cm.polygons_with_images = non_empty_polygons[constants.polygon_return_schema]
